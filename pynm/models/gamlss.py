@@ -1,9 +1,9 @@
 import re
 import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
-from rpy2.robjects import numpy2ri
-from rpy2.robjects import pandas2ri
 from rpy2.robjects import r
+from rpy2.robjects.conversion import localconverter
+from rpy2.robjects import numpy2ri, pandas2ri
 from pynm.util import read_confounds
 
 class GAMLSS:
@@ -62,8 +62,8 @@ class GAMLSS:
         If using 'random()' to model a random effect in any of the formulas, it must be passed a column of the dataframe with categorical values
         as a factor: e.g. 'random(as.factor(COL))'.
         """
-        numpy2ri.activate()
-        pandas2ri.activate()
+        # Create converter for automatic conversion between Python and R objects
+        self.converter = ro.default_converter + numpy2ri.converter + pandas2ri.converter
 
         self.gamlss_data = importr('gamlss.data')
         self.gamlss_dist = importr('gamlss.dist')
@@ -167,15 +167,16 @@ class GAMLSS:
         train_data: DataFrame
             DataFrame with training data.
         """
-        ro.globalenv['train_data'] = train_data
+        with localconverter(self.converter):
+            ro.globalenv['train_data'] = train_data
 
-        self.model = r(f'''gamlss({self.mu_f},
-                                sigma.formula={self.sigma_f},
-                                nu.formula={self.nu_f},
-                                tau.formula={self.tau_f},
-                                family={self.family},
-                                data=train_data,
-                                method={self.method})''')
+            self.model = r(f'''gamlss({self.mu_f},
+                                    sigma.formula={self.sigma_f},
+                                    nu.formula={self.nu_f},
+                                    tau.formula={self.tau_f},
+                                    family={self.family},
+                                    data=train_data,
+                                    method={self.method})''')
                     
     def predict(self,test_data,what='mu'):
         """Predict from fitted gamlss model.
@@ -187,8 +188,9 @@ class GAMLSS:
         what: str
             Which parameter to predict, can be 'mu','sigma', 'nu', or 'tau'.
         """
-        ro.globalenv['model'] = self.model
-        ro.globalenv['test_data'] = test_data
+        with localconverter(self.converter):
+            ro.globalenv['model'] = self.model
+            ro.globalenv['test_data'] = test_data
 
-        res = r(f'''predict(model,newdata=test_data,parameter="{what}")''')
+            res = r(f'''predict(model,newdata=test_data,parameter="{what}")''')
         return res
