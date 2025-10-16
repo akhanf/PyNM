@@ -2,7 +2,6 @@ import re
 import rpy2.robjects as ro
 from rpy2.robjects.packages import importr
 from rpy2.robjects import r
-from rpy2.robjects.conversion import localconverter
 from rpy2.robjects import numpy2ri, pandas2ri
 from pynm.util import read_confounds
 
@@ -167,7 +166,7 @@ class GAMLSS:
         train_data: DataFrame
             DataFrame with training data.
         """
-        with localconverter(self.converter):
+        with self.converter.context():
             ro.globalenv['train_data'] = train_data
 
             self.model = r(f'''gamlss({self.mu_f},
@@ -188,9 +187,11 @@ class GAMLSS:
         what: str
             Which parameter to predict, can be 'mu','sigma', 'nu', or 'tau'.
         """
-        with localconverter(self.converter):
+        with self.converter.context():
             ro.globalenv['model'] = self.model
             ro.globalenv['test_data'] = test_data
 
             res = r(f'''predict(model,newdata=test_data,parameter="{what}")''')
-        return res
+            # Convert to Python within the converter context to ensure proper conversion
+            import numpy as np
+            return np.array(res)
