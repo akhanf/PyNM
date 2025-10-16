@@ -168,14 +168,14 @@ class GAMLSS:
         """
         with self.converter.context():
             ro.globalenv['train_data'] = train_data
-
-            self.model = r(f'''gamlss({self.mu_f},
-                                    sigma.formula={self.sigma_f},
-                                    nu.formula={self.nu_f},
-                                    tau.formula={self.tau_f},
-                                    family={self.family},
-                                    data=train_data,
-                                    method={self.method})''')
+        
+        self.model = r(f'''gamlss({self.mu_f},
+                                sigma.formula={self.sigma_f},
+                                nu.formula={self.nu_f},
+                                tau.formula={self.tau_f},
+                                family={self.family},
+                                data=train_data,
+                                method={self.method})''')
                     
     def predict(self,test_data,what='mu'):
         """Predict from fitted gamlss model.
@@ -187,11 +187,11 @@ class GAMLSS:
         what: str
             Which parameter to predict, can be 'mu','sigma', 'nu', or 'tau'.
         """
+        ro.globalenv['model'] = self.model
         with self.converter.context():
-            ro.globalenv['model'] = self.model
             ro.globalenv['test_data'] = test_data
-
-            res = r(f'''predict(model,newdata=test_data,parameter="{what}")''')
-            # Convert to Python within the converter context to ensure proper conversion
-            import numpy as np
-            return np.array(res)
+        
+        res = r(f'''predict(model,newdata=test_data,parameter="{what}")''')
+        # Convert R vector to numpy array for compatibility with numpy indexing
+        import numpy as np
+        return np.array(res)
