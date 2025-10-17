@@ -526,6 +526,19 @@ class TestGAMLSS:
         m.centiles_normative_model()
         m.gamlss_normative_model(mu='score ~ ps(age) + c(sex) + c(site)',sigma = '~ age',family='SHASHo2')
 
+    def test_gamlss_converter_context(self):
+        """Test that GAMLSS can be initialized without NotImplementedError due to missing converter context."""
+        from pynm.models import gamlss
+        
+        # This test ensures the converter context is properly activated during R package imports
+        # Previously, this would raise NotImplementedError about missing conversion rules
+        g = gamlss.GAMLSS(mu='score ~ ps(age*sex) + ps(age*male) + random(as.factor(site))',
+                         sigma='~ ps(age)+ random(as.factor(site))')
+        assert g.gamlss_data is not None
+        assert g.gamlss_dist is not None
+        assert g.gamlss is not None
+        assert g.base is not None
+    
     def test_gamlss_random_effect(self):
         df = generate_data(n_sites=4,sample_size=35,randseed=650)
         #Initialize pynm w/ data and confounds
