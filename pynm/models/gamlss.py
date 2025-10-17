@@ -64,10 +64,12 @@ class GAMLSS:
         # Create converter for automatic conversion between Python and R objects
         self.converter = ro.default_converter + numpy2ri.converter + pandas2ri.converter
 
-        self.gamlss_data = importr('gamlss.data')
-        self.gamlss_dist = importr('gamlss.dist')
-        self.gamlss = importr('gamlss')
-        self.base = importr('base')
+        # Import R packages with converter context activated
+        with self.converter.context():
+            self.gamlss_data = importr('gamlss.data')
+            self.gamlss_dist = importr('gamlss.dist')
+            self.gamlss = importr('gamlss')
+            self.base = importr('base')
         
         self.score = score
         self.confounds = confounds
